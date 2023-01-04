@@ -17,5 +17,12 @@ const mysqlConfig = {
 
 const connection = mysql.createConnection(mysqlConfig);
 
+app.get('/expenses', (req, res) => {
+    connection.execute('SELECT * FROM expenses', (err, expenses) => {
+        console.log(expenses);
+        res.send(expenses);
+    })
+})
+
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
