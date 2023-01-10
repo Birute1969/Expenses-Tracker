@@ -38,7 +38,7 @@ export const Expenses = () => {
     const [expenses, setExpenses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [type, setType] = useState('');
-    const [amount, setAmount] =useState('');
+    const [amount, setAmount] = useState('');
 
     useEffect(() => {
         fetch(`${process.env.REACT_APP_API_URL}/expenses?userId=${LOGGED_IN_USER.id}`)
