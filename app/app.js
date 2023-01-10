@@ -1,6 +1,8 @@
 const cors = require('cors');
 const express = require('express');
 const mysql = require('mysql2');
+const bcrypt =require('bcrypt');
+const e = require('cors');
 
 require('dotenv').config();
 
@@ -50,7 +52,7 @@ const connection = mysql.createConnection(mysqlConfig);
 //     })
 // })
 
-//Galima užrašyti kitu būdu:
+//Galima užrašyti kitu būdu, man sitas gerai veike:
 app.get('/expenses', (req, res) => {
      const { userId } = req.query;
      connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
@@ -76,6 +78,41 @@ app.post('/expenses', (req, res) => {
             )
         }
     )
+});
+
+app.post('/register', (req,res) => {
+    const { name, password}= req.body;
+    const hashedPassword = bcrypt.hashSync(password,12);
+
+    connection.execute('INSERT INTO users (name,password) VALUES (?,?)',
+        [name,hashedPassword],
+        (err, result) => {
+            console.log(err)
+            res.sendStatus(200);
+        }
+    )
+})
+
+app.post('/login', (req,res) => {
+    const { name, password}= req.body;
+    
+    connection.execute('SELECT * FROM users WHERE name=?',
+        [name],
+        (err,result) => {
+            if (result.length ===0) {
+                res.send('[Incorrect username or password');
+            } else {
+                console.log(result)
+                const passwordHash = result[0].password
+                const isPasswordCorrect = bcrypt.compareSync(password, passwordHash);
+                if (isPasswordCorrect) {
+                    res.send('Successfully logged in!');
+                } else {
+                    res.send('Incorrect username or password');
+                }
+            }
+        }
+    );
 });
 
 const PORT = 8080;
