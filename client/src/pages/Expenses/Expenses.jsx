@@ -1,15 +1,12 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styled from 'styled-components';
-import { LOGGED_IN_USER} from "../../constants/constants";
-
+import { LOGGED_IN_USER } from "../../constants/constants";
 const ExpensesList = styled.ul`
     display: flex;
     flex-direction: column;
     gap: 8px;
     list-style: none;
 `;
-
 const ExpensesListItem = styled.li`
     align-items: center;
     border-radius: 10px;
@@ -18,13 +15,11 @@ const ExpensesListItem = styled.li`
     justify-content: space-between;
     padding: 10px 30px;
 `;
-
 const ExpenseAmount = styled.span`
     color: #35d8ac;
     font-size: 34px;
     font-weight: 700;
 `;
-
 const ExpenseType = styled.span`
     color: #979cb0;
     font-size: 20px;
@@ -33,7 +28,6 @@ const ExpenseType = styled.span`
     white-space: nowrap;
     overflow: hidden;
 `;
-
 export const Expenses = () => {
     const [expenses, setExpenses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -45,35 +39,40 @@ export const Expenses = () => {
             .then(res => res.json())
             .then(data => {
                 setExpenses(data);
+                //kad laukeliai suvedus išlaidas vėliau išsivalytų:
+                //setName('');
+                //setAmount('');
                 setIsLoading(false);
             });
     }, []);
-
     if (isLoading) {
-        return<div>Loading...</div>;
+        return <div>Loading...</div>;
     }
 
     const handleExpenseAdd = (e) => {
         e.preventDefault();
+        //kad pasitikslintume ar veikia, pasiloginame:
+        //console.log(type);
+        //console.log(amount);
+
         fetch(`${process.env.REACT_APP_API_URL}/expenses`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                type,
+                type, 
                 amount,
-                userId:1
+                userId: 1
             })
         })
-        .then((res)=> res.json())
+        .then((res) => res.json())
         .then((data) => {
             //console.log(data);
             setExpenses(data);
             setType('');
             setAmount('');
-
-        })
+        });
     }
 
     const totalSum = expenses.reduce((totalSum, expense) => totalSum += parseInt(expense.amount), 0);
@@ -82,20 +81,18 @@ export const Expenses = () => {
         <ExpensesList>
             <form onSubmit={handleExpenseAdd}>
                 <input 
-                placeholder="Type" 
-                required 
-                onChange={(e) => setType(e.target.value)}
-                value = {type}>
-                </input>
-
+                    placeholder="Type" 
+                    required 
+                    onChange={(e) => setType(e.target.value)}
+                    value={type}
+                />
                 <input 
-                placeholder="Amount" 
-                type="number" 
-                required
-                onChange={(e)=> setAmount(e.target.value)}
-                value={amount}>
-                </input>
-
+                    placeholder="Amount" 
+                    type="number" 
+                    required 
+                    onChange={(e) => setAmount(e.target.value)}
+                    value={amount}
+                />
                 <button>Add</button>
             </form>
             <h2>Total spent: €{totalSum}</h2>

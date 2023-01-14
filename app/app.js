@@ -18,30 +18,21 @@ const mysqlConfig = {
     database: process.env.MYSQL_DATABASE,
     port: process.env.MYSQL_PORT
 };
-
 const connection = mysql.createConnection(mysqlConfig);
-
-// app.get('/expenses/:id', (req, res) => {
-//       const {id} = req.params;
-//       connection.execute('SELECT * FROM expenses WHERE id=?', [id], (err, expenses) => {
-//           console.log(expenses);
-//           res.send(expenses);
-//       })
-//   })
-
-// Endpointas grąžina būtent mūsų išlaidas pagal userId:
-
+// app.get('/expenses/:userId', (req, res) => {
+//     const { userId } = req.params;
+//     connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
+//         res.send(expenses);
+//     });
+// });
 app.get('/expenses', (req, res) => {
-     const { userId } = req.query;
-     connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
-         console.log(expenses);
-         res.send(expenses);
-     });
+    const { userId } = req.query;
+    connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
+        res.send(expenses);
+    });
 });
-
 app.post('/expenses', (req, res) => {
     const { type, amount, userId } = req.body;
-
     connection.execute(
         'INSERT INTO expenses (type, amount, userId) VALUES (?, ?, ?)',
         [type, amount, userId],
@@ -50,7 +41,6 @@ app.post('/expenses', (req, res) => {
                 'SELECT * FROM expenses WHERE userId=?', 
                 [userId], 
                 (err, expenses) => {
-                    console.log(expenses);
                     res.send(expenses);
                 }
             )
@@ -58,29 +48,30 @@ app.post('/expenses', (req, res) => {
     )
 });
 
-app.post('/register', (req,res) => {
-    const { name, password}= req.body;
-    const hashedPassword = bcrypt.hashSync(password,12);
+app.post('/register', (req, res) => {
+    const { name, password } = req.body;
+    const hashedPassword = bcrypt.hashSync(password, 12);
+    bcrypt.compareSync()
 
-    connection.execute('INSERT INTO users (name,password) VALUES (?,?)',
-        [name,hashedPassword],
+    connection.execute(
+        'INSERT INTO users (name, password) VALUES (?, ?)', 
+        [name, hashedPassword],
         (err, result) => {
-            console.log(err)
             res.sendStatus(200);
         }
     )
-})
+});
 
-app.post('/login', (req,res) => {
-    const { name, password}= req.body;
-    
-    connection.execute('SELECT * FROM users WHERE name=?',
+app.post('/login', (req, res) => {
+    const { name, password } = req.body;
+
+    connection.execute(
+        'SELECT * FROM users WHERE name=?',
         [name],
-        (err,result) => {
-            if (result.length ===0) {
-                res.send('[Incorrect username or password');
+        (err, result) => {
+            if (result.length === 0) {
+                res.send('Incorrect username or password');
             } else {
-                console.log(result)
                 const passwordHash = result[0].password
                 const isPasswordCorrect = bcrypt.compareSync(password, passwordHash);
                 if (isPasswordCorrect) {

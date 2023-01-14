@@ -1,9 +1,8 @@
 import { useState } from "react";
 
-
-export const Login = ({onSuccess}) => {
-    const[name, setName] = useState('');
-    const[password, setPassword]= useState('');
+export const Login = ({ onSuccess }) => {
+    const [name, setName] = useState('');
+    const [password, setPassword] = useState('');
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -29,18 +28,16 @@ export const Login = ({onSuccess}) => {
     return (
         <form onSubmit={handleLogin}>
             <input 
-            placeholder="Name"
-            onChange={(e) => setName(e.target.value)}
-            value={name}
+                placeholder="Name" 
+                onChange={(e) => setName(e.target.value)}
+                value={name}
             />
-
             <input 
-            placeholder="Password" 
-            type="password"
-            onChange={(e) => setPassword(e.target.value)}
-            value={password}
+                placeholder="Password" 
+                type="password"
+                onChange={(e) => setPassword(e.target.value)}
+                value={password}
             />
-
             <button>Login</button>
         </form>
     );

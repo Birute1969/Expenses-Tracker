@@ -1,9 +1,9 @@
 import './App.css';
 import { useState } from 'react';
-import { Route, Routes,useNavigate } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import { Expenses } from './pages/Expenses/Expenses';
 import { PageLayout } from './components/PageLayout/PageLayout';
-//import { Login } from './pages/Login/Login';
+import { Login } from './pages/Login/Login';
 
 function App() {
   const navigate = useNavigate();
@@ -16,11 +16,12 @@ function App() {
 
   return (
     <div>
+      
       <Routes>
         <Route path="/" element={<PageLayout user={user} />}>
           <Route index element= {<Expenses />}/>
         </Route>
-        <Route path="/login" element={<login onSuccess={handleLoginSuccess} />}/>
+        <Route path="/login" element={<Login onSuccess={handleLoginSuccess} />}/>
       </Routes>
     </div>
   );
