@@ -2,7 +2,6 @@ const cors = require('cors');
 const express = require('express');
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
-const e = require('cors');
 
 require('dotenv').config();
 
@@ -18,21 +17,26 @@ const mysqlConfig = {
     database: process.env.MYSQL_DATABASE,
     port: process.env.MYSQL_PORT
 };
+
 const connection = mysql.createConnection(mysqlConfig);
+
 // app.get('/expenses/:userId', (req, res) => {
 //     const { userId } = req.params;
 //     connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
 //         res.send(expenses);
 //     });
 // });
+
 app.get('/expenses', (req, res) => {
     const { userId } = req.query;
     connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
         res.send(expenses);
     });
 });
+
 app.post('/expenses', (req, res) => {
     const { type, amount, userId } = req.body;
+
     connection.execute(
         'INSERT INTO expenses (type, amount, userId) VALUES (?, ?, ?)',
         [type, amount, userId],
@@ -51,13 +55,16 @@ app.post('/expenses', (req, res) => {
 app.post('/register', (req, res) => {
     const { name, password } = req.body;
     const hashedPassword = bcrypt.hashSync(password, 12);
-    bcrypt.compareSync()
 
     connection.execute(
         'INSERT INTO users (name, password) VALUES (?, ?)', 
         [name, hashedPassword],
         (err, result) => {
-            res.sendStatus(200);
+            if (err?.code === 'ER_DUP_ENTRY') {
+                res.sendStatus(400);
+            }
+            
+            res.send(result);
         }
     )
 });
@@ -69,15 +76,17 @@ app.post('/login', (req, res) => {
         'SELECT * FROM users WHERE name=?',
         [name],
         (err, result) => {
+            console.log(err);
+            
             if (result.length === 0) {
-                res.send('Incorrect username or password');
+                res.sendStatus(401);
             } else {
                 const passwordHash = result[0].password
                 const isPasswordCorrect = bcrypt.compareSync(password, passwordHash);
                 if (isPasswordCorrect) {
                     res.send(result[0]);
                 } else {
-                    res.send('Incorrect username or password');
+                    res.sendStatus(401);
                 }
             }
         }

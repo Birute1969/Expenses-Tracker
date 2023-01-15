@@ -7,6 +7,7 @@ const ButtonStyled = styled.button`
     color: #fff;
     font-size: 16px;
     padding: 10px 20px;
+    /*uždedame, kad buttonas papilkėtų, kol loadinasi informacija:*/
     &:disabled {
         opacity: 0.5;
     }
