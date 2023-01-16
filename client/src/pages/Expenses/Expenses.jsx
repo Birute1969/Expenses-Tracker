@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import styled from 'styled-components';
-import { LOGGED_IN_USER } from "../../constants/constants";
-import { Input } from "../../components/Input/Input";
 import { Button } from "../../components/Button/Button";
+import { Form } from "../../components/Form/Form";
+import { Input } from "../../components/Input/Input";
+import { UserContext } from '../../contexts/UserContextWrapper';
 
 const ExpensesList = styled.ul`
     display: flex;
@@ -10,6 +11,7 @@ const ExpensesList = styled.ul`
     gap: 8px;
     list-style: none;
 `;
+
 const ExpensesListItem = styled.li`
     align-items: center;
     border-radius: 10px;
@@ -18,11 +20,13 @@ const ExpensesListItem = styled.li`
     justify-content: space-between;
     padding: 10px 30px;
 `;
+
 const ExpenseAmount = styled.span`
     color: #35d8ac;
     font-size: 34px;
     font-weight: 700;
 `;
+
 const ExpenseType = styled.span`
     color: #979cb0;
     font-size: 20px;
@@ -31,33 +35,28 @@ const ExpenseType = styled.span`
     white-space: nowrap;
     overflow: hidden;
 `;
+
 export const Expenses = () => {
     const [expenses, setExpenses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [type, setType] = useState('');
     const [amount, setAmount] = useState('');
+    const { user } = useContext(UserContext);
 
     useEffect(() => {
-        fetch(`${process.env.REACT_APP_API_URL}/expenses?userId=${LOGGED_IN_USER.id}`)
+        fetch(`${process.env.REACT_APP_API_URL}/expenses?userId=${user.id}`)
             .then(res => res.json())
             .then(data => {
                 setExpenses(data);
-                //kad laukeliai suvedus išlaidas vėliau išsivalytų:
-                //setName('');
-                //setAmount('');
                 setIsLoading(false);
             });
-    }, []);
+    }, [user.id]);
+
     if (isLoading) {
         return <div>Loading...</div>;
     }
 
-    const handleExpenseAdd = (e) => {
-        e.preventDefault();
-        //kad pasitikslintume ar veikia, pasiloginame:
-        //console.log(type);
-        //console.log(amount);
-
+    const handleExpenseAdd = () => {
         fetch(`${process.env.REACT_APP_API_URL}/expenses`, {
             method: 'POST',
             headers: {
@@ -66,12 +65,11 @@ export const Expenses = () => {
             body: JSON.stringify({
                 type, 
                 amount,
-                userId: 1
+                userId: user.id
             })
         })
         .then((res) => res.json())
         .then((data) => {
-            //console.log(data);
             setExpenses(data);
             setType('');
             setAmount('');
@@ -82,7 +80,7 @@ export const Expenses = () => {
 
     return (
         <ExpensesList>
-            <form onSubmit={handleExpenseAdd}>
+            <Form onSubmit={handleExpenseAdd}>
                 <Input 
                     placeholder="Type" 
                     required 
@@ -97,7 +95,7 @@ export const Expenses = () => {
                     value={amount}
                 />
                 <Button>Add</Button>
-            </form>
+            </Form>
             <h2>Total spent: €{totalSum}</h2>
             {expenses.map((exp) => (
                 <ExpensesListItem key={exp.id}>

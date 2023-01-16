@@ -1,32 +1,25 @@
 import './App.css';
-import { useState } from 'react';
-import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { Expenses } from './pages/Expenses/Expenses';
 import { PageLayout } from './components/PageLayout/PageLayout';
 import { Login } from './pages/Login/Login';
 import { Register } from './pages/Register/Register';
+import { UserContextWrapper} from './contexts/UserContextWrapper';
+import { NotFound} from './pages/NotFound/NotFound';
 
 function App() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  const handleLoginSuccess = (user) => {
-    //pasidedame user ir nunaviguojame į Expenses puslapį
-    setUser(user);
-    navigate('/');
-  }
-
+  
   return (
-    <div>
-      <Expenses/>
+    <UserContextWrapper>
       <Routes>
-        <Route path="/" element={<PageLayout user={user} />}>
+        <Route path="/" element={<PageLayout />}>
           <Route index element= {<Expenses />}/>
         </Route>
-        <Route path="/login" element={<Login onSuccess={handleLoginSuccess} />}/>
+        <Route path="/login" element={<Login/>}/>
         <Route path="/register" element={<Register />}/>
+        <Route path="*" element={<NotFound />} />
       </Routes>
-    </div>
+    </UserContextWrapper>
   );
 }
 export default App;

@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Button } from "../../components/Button/Button";
 import { Form } from "../../components/Form/Form";
 import { Input } from "../../components/Input/Input";
+import { UserContext } from "../../contexts/UserContextWrapper";
 
 const LoginContainer = styled.div`
     align-items: center;
@@ -24,12 +25,21 @@ const FormStyled = styled(Form)`
     padding: 20px;
     width: 400px;
 `;
+//stilizuojame error:
+const ErrorStyled = styled.div`
+    color: red;
+    text-align: center;
+`;
 
-export const Login = ({ onSuccess }) => {
+
+export const Login = () => {
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    //pasiimportuojame Context:
+    const { setUser } = useContext(UserContext);
+    const navigate = useNavigate();
 
     const handleLogin = () => {
         setIsLoading(true);
@@ -52,12 +62,14 @@ export const Login = ({ onSuccess }) => {
             if (!res.ok) {
                 throw new Error('Something went wrong');
             }
+
             return res.json();
         })
         .then((data) => {
-            onSuccess(data);
+            setUser(data);
             setIsLoading(false);
             setError('');
+            navigate('/');
         })
         .catch((e) => {
             setError(e.message);
@@ -80,7 +92,7 @@ export const Login = ({ onSuccess }) => {
                     onChange={(e) => setPassword(e.target.value)}
                     value={password}
                 />
-                {error && <div>{error}</div>}
+                {error && <ErrorStyled>{error}</ErrorStyled>}
                 <Button>Login</Button>
                 <LinkStyled to="/register">Register</LinkStyled>
             </FormStyled>

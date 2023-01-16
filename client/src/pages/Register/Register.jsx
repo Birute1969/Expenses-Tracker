@@ -22,6 +22,11 @@ const FormStyled = styled(Form)`
     padding: 20px;
     width: 400px;
 `;
+//stilizuojame error:
+const ErrorStyled = styled.div`
+    color: red;
+    text-align: center;
+`;
 
 export const Register = () => {
     //paduodame State
@@ -81,7 +86,7 @@ export const Register = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     value={password}
                 />
-                {error && <div>{error}</div>}
+                {error && <ErrorStyled>{error}</ErrorStyled>}
 
                 <Button>Register</Button>
                 <LinkStyled to="/login">Login</LinkStyled>
