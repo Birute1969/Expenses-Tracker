@@ -21,12 +21,15 @@ const mysqlConfig = {
 
 const connection = mysql.createConnection(mysqlConfig);
 
+const getUserFromToken = (req) => {
+    const token = req.headers.authorizatio.split('')[1];
+    const user = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    return user;
+}
+
 const verifyToken = (req, res, next) => {
     try {
-        //iš header paimsime Tokien, paverifikuoseme ir grąžinsime:
-        const token = req.headers.authorization.split(' ')[1];//paimame pirmą Token
-        //grąžinsime user ir tai rodys, kad Tokien validus:
-        const user = jwt.verify(token, process.env.JWT_SECRET_KEY);  
+        getUserFromToken();
         next();
     } catch(e) {
         res.send({ error: 'Invalid Token' });
@@ -34,23 +37,25 @@ const verifyToken = (req, res, next) => {
 }
 
 app.get('/expenses', verifyToken, (req, res) => {
-    const user = getUserFromToken(req);
-    
+    const user = getUserFromToken();
+
     connection.execute('SELECT * FROM expenses WHERE userId=?', [user.id], (err, expenses) => {
         res.send(expenses);
     });
 });
 
 app.post('/expenses', verifyToken,  (req, res) => {
-    const { type, amount, userId } = req.body;
+    //userId keičiame į getUserFromToken
+    const { type, amount} = req.body;
+    const {id} = getUserFromToken();
 
     connection.execute(
         'INSERT INTO expenses (type, amount, userId) VALUES (?, ?, ?)',
-        [type, amount, userId],
+        [type, amount, id],
         () => {
             connection.execute(
                 'SELECT * FROM expenses WHERE userId=?', 
-                [userId], 
+                [id], 
                 (err, expenses) => {
                     res.send(expenses);
                 }
