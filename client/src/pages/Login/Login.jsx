@@ -5,6 +5,7 @@ import { Button } from "../../components/Button/Button";
 import { Form } from "../../components/Form/Form";
 import { Input } from "../../components/Input/Input";
 import { UserContext } from "../../contexts/UserContextWrapper";
+import { LOCAL_STORAGE_JWT_TOKEN_KEY } from "../../constants/constants";
 
 const LoginContainer = styled.div`
     align-items: center;
@@ -66,7 +67,9 @@ export const Login = () => {
             return res.json();
         })
         .then((data) => {
-            setUser(data);
+            const {id, name, token} = data;
+            localStorage.setItem(LOCAL_STORAGE_JWT_TOKEN_KEY, token);
+            setUser(id, name);
             setIsLoading(false);
             setError('');
             navigate('/');

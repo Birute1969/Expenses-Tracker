@@ -4,6 +4,7 @@ import { Button } from "../../components/Button/Button";
 import { Form } from "../../components/Form/Form";
 import { Input } from "../../components/Input/Input";
 import { UserContext } from '../../contexts/UserContextWrapper';
+import { LOCAL_STORAGE_JWT_TOKEN_KEY } from '../../constants/constants';
 
 const ExpensesList = styled.ul`
     display: flex;
@@ -44,10 +45,17 @@ export const Expenses = () => {
     const { user } = useContext(UserContext);
 
     useEffect(() => {
-        fetch(`${process.env.REACT_APP_API_URL}/expenses?userId=${user.id}`)
+        fetch(`${process.env.REACT_APP_API_URL}/expenses?userId=${user.id}`, {
+            headers: {
+                authorization: 'Bearer ' + localStorage.getItem(LOCAL_STORAGE_JWT_TOKEN_KEY)
+            }
+        })
             .then(res => res.json())
             .then(data => {
-                setExpenses(data);
+                if (!data.error) {
+                    console.log(data);
+                    setExpenses(data);
+                }
                 setIsLoading(false);
             });
     }, [user.id]);
@@ -58,9 +66,11 @@ export const Expenses = () => {
 
     const handleExpenseAdd = () => {
         fetch(`${process.env.REACT_APP_API_URL}/expenses`, {
+            //paduodame
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                authorization: 'Bearer ' + localStorage.getItem(LOCAL_STORAGE_JWT_TOKEN_KEY)
             },
             body: JSON.stringify({
                 type, 
@@ -68,11 +78,15 @@ export const Expenses = () => {
                 userId: user.id
             })
         })
+        //grįžta
         .then((res) => res.json())
         .then((data) => {
-            setExpenses(data);
-            setType('');
-            setAmount('');
+            //jeigu data grįžta be error:
+            if (!data.error) {
+                setExpenses(data);
+                setType('');
+                setAmount('');
+            }
         });
     }
 

@@ -2,6 +2,7 @@ const cors = require('cors');
 const express = require('express');
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 require('dotenv').config();
 
@@ -20,21 +21,27 @@ const mysqlConfig = {
 
 const connection = mysql.createConnection(mysqlConfig);
 
-// app.get('/expenses/:userId', (req, res) => {
-//     const { userId } = req.params;
-//     connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
-//         res.send(expenses);
-//     });
-// });
+const verifyToken = (req, res, next) => {
+    try {
+        //iš header paimsime Tokien, paverifikuoseme ir grąžinsime:
+        const token = req.headers.authorization.split(' ')[1];//paimame pirmą Token
+        //grąžinsime user ir tai rodys, kad Tokien validus:
+        const user = jwt.verify(token, process.env.JWT_SECRET_KEY);  
+        next();
+    } catch(e) {
+        res.send({ error: 'Invalid Token' });
+    }
+}
 
-app.get('/expenses', (req, res) => {
-    const { userId } = req.query;
-    connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
+app.get('/expenses', verifyToken, (req, res) => {
+    const user = getUserFromToken(req);
+    
+    connection.execute('SELECT * FROM expenses WHERE userId=?', [user.id], (err, expenses) => {
         res.send(expenses);
     });
 });
 
-app.post('/expenses', (req, res) => {
+app.post('/expenses', verifyToken,  (req, res) => {
     const { type, amount, userId } = req.body;
 
     connection.execute(
@@ -84,7 +91,9 @@ app.post('/login', (req, res) => {
                 const passwordHash = result[0].password
                 const isPasswordCorrect = bcrypt.compareSync(password, passwordHash);
                 if (isPasswordCorrect) {
-                    res.send(result[0]);
+                    const { id, name } = result[0];
+                    const token =jwt.sign( {id, name}, process.env.JWT_SECRET_KEY);
+                    res.send({token, id, name});//čia naudosime JWT
                 } else {
                     res.sendStatus(401);
                 }
@@ -92,6 +101,18 @@ app.post('/login', (req, res) => {
         }
     );
 });
+//patikriname ar Tokien galioja
+app.get('/token/verify', (req, res) => {
+    try {
+        //iš header paimsime Tokien, paverifikuoseme ir grąžinsime:
+        const token = req.headers.authorization.split('')[1];//paimame pirmą Token
+        const user = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        //grąžinsime user ir tai rodys, kad Tokien validus:
+        res.send(user);
+    } catch(e) {
+        res.send ({error: 'Invalid Token'});
+    }
+} );
 
 const PORT = 8080;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
