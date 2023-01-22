@@ -3,6 +3,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fetch = require('node-fetch');
 
 require('dotenv').config();
 
@@ -21,15 +22,22 @@ const mysqlConfig = {
 
 const connection = mysql.createConnection(mysqlConfig);
 
+// app.get('/expenses/:userId', (req, res) => {
+//     const { userId } = req.params;
+//     connection.execute('SELECT * FROM expenses WHERE userId=?', [userId], (err, expenses) => {
+//         res.send(expenses);
+//     });
+// });
+
 const getUserFromToken = (req) => {
-    const token = req.headers.authorizatio.split('')[1];
+    const token = req.headers.authorization.split(' ')[1];
     const user = jwt.verify(token, process.env.JWT_SECRET_KEY);
     return user;
 }
 
 const verifyToken = (req, res, next) => {
     try {
-        getUserFromToken();
+        getUserFromToken(req);
         next();
     } catch(e) {
         res.send({ error: 'Invalid Token' });
@@ -37,25 +45,61 @@ const verifyToken = (req, res, next) => {
 }
 
 app.get('/expenses', verifyToken, (req, res) => {
-    const user = getUserFromToken();
-
+    const user = getUserFromToken(req);
+    
     connection.execute('SELECT * FROM expenses WHERE userId=?', [user.id], (err, expenses) => {
         res.send(expenses);
     });
 });
 
-app.post('/expenses', verifyToken,  (req, res) => {
-    //userId keičiame į getUserFromToken
-    const { type, amount} = req.body;
-    const {id} = getUserFromToken();
+app.post('/expenses', verifyToken, (req, res) => {
+    const { type, amount, timestamp } = req.body;
+    const { id } = getUserFromToken(req);
+
+    const sqlQuery = timestamp ?
+    //jeigu atkeliauja vartotojo įrašyta data, bus taip
+    'INSERT INTO expenses (type, amount, userId, timestamp) VALUES (?, ?, ?, ?)' :
+    //jeigu vartotojas neįrašys datos, bus taip:
+    'INSERT INTO expenses (type, amount, userId) VALUES (?, ?, ?)';
+
+    //susikuriame kintamąjį dėl datos, jeigu nesuvestume svetainėje:
+    const data = [type, amount, id];
+    if (timestamp) {
+        data.push(timestamp);
+    }
 
     connection.execute(
-        'INSERT INTO expenses (type, amount, userId) VALUES (?, ?, ?)',
-        [type, amount, id],
+        sqlQuery,
+        data,
         () => {
             connection.execute(
+                //grąžiname visas atnaujintas user išlaidas:
                 'SELECT * FROM expenses WHERE userId=?', 
                 [id], 
+                (err, expenses) => { 
+                    res.send(expenses);
+                }
+            )
+        }
+    )
+});
+
+app.delete('/expenses/:id', verifyToken, (req, res) => {
+    const { id } = req.params;
+    //susirandame būtent to user išlaidas ir ištriname:
+    const { id: userId } = getUserFromToken(req);
+
+    //console.log(user);
+    //console.log(id);
+
+    connection.execute(
+        'DELETE FROM expenses WHERE id=? AND userId=?',
+        [id, userId],
+        () => {
+            connection.execute(
+                //grąžiname visas atnaujintas user išlaidas po ištrynimo:
+                'SELECT * FROM expenses WHERE userId=?', 
+                [userId], 
                 (err, expenses) => {
                     res.send(expenses);
                 }
@@ -88,8 +132,6 @@ app.post('/login', (req, res) => {
         'SELECT * FROM users WHERE name=?',
         [name],
         (err, result) => {
-            console.log(err);
-            
             if (result.length === 0) {
                 res.sendStatus(401);
             } else {
@@ -97,8 +139,8 @@ app.post('/login', (req, res) => {
                 const isPasswordCorrect = bcrypt.compareSync(password, passwordHash);
                 if (isPasswordCorrect) {
                     const { id, name } = result[0];
-                    const token =jwt.sign( {id, name}, process.env.JWT_SECRET_KEY);
-                    res.send({token, id, name});//čia naudosime JWT
+                    const token = jwt.sign({ id, name }, process.env.JWT_SECRET_KEY);
+                    res.send({ token, id, name });
                 } else {
                     res.sendStatus(401);
                 }
@@ -106,18 +148,36 @@ app.post('/login', (req, res) => {
         }
     );
 });
-//patikriname ar Tokien galioja
+
 app.get('/token/verify', (req, res) => {
     try {
-        //iš header paimsime Tokien, paverifikuoseme ir grąžinsime:
-        const token = req.headers.authorization.split('')[1];//paimame pirmą Token
+        const token = req.headers.authorization.split(' ')[1];
         const user = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        //grąžinsime user ir tai rodys, kad Tokien validus:
         res.send(user);
     } catch(e) {
-        res.send ({error: 'Invalid Token'});
+        res.send({ error: 'Invalid Token' });
     }
-} );
+});
+
+app.get('/test/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+        const data = await response.json();
+
+        connection.execute('INSERT INTO test(title) VALUES (?)', [data.title], (err, result) => {
+            res.send(data);
+        });
+    } catch(e) {
+        res.send('Something went wrong');
+    }
+});
+
+// fetch('https://jsonplaceholder.typicode.com/todos/1')
+//     .then(res => res.json())
+//     .then(data => {
+//         console.log(data);
+//     })
 
 const PORT = 8080;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

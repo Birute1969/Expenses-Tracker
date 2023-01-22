@@ -5,6 +5,7 @@ import { Form } from "../../components/Form/Form";
 import { Input } from "../../components/Input/Input";
 import { UserContext } from '../../contexts/UserContextWrapper';
 import { LOCAL_STORAGE_JWT_TOKEN_KEY } from '../../constants/constants';
+import { DateTime } from 'luxon';
 
 const ExpensesList = styled.ul`
     display: flex;
@@ -13,13 +14,45 @@ const ExpensesList = styled.ul`
     list-style: none;
 `;
 
+const HoverOverlay = styled.div`
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    content: '';
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    left: 0;
+    position: absolute;
+    width: 100%;
+`;
+/*uždedame raudoną teksto spalvą*/
+const HoverOverlayContent = styled.div`
+    color: red;
+    font-size: 16px;
+`;
+
+/*į ExpensesListItem įdėsime HoverOverlay*/
 const ExpensesListItem = styled.li`
     align-items: center;
     border-radius: 10px;
     box-shadow: 0 5px 7px -1px rgb(51 51 51 / 23%);
+    cursor: pointer;
     display: flex;
     justify-content: space-between;
+    overflow: hidden;
     padding: 10px 30px;
+    position: relative;
+
+    /*elementas "HoverOverlay" ateina iš "ExpensesListItem"*/
+    ${HoverOverlay} {
+        visibility: hidden;
+    }
+
+    &:hover {
+        ${HoverOverlay} {
+            visibility: visible;
+        }
+    }
 `;
 
 const ExpenseAmount = styled.span`
@@ -42,6 +75,7 @@ export const Expenses = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [type, setType] = useState('');
     const [amount, setAmount] = useState('');
+    const [date, setDate] = useState('');
     const { user } = useContext(UserContext);
 
     useEffect(() => {
@@ -53,7 +87,6 @@ export const Expenses = () => {
             .then(res => res.json())
             .then(data => {
                 if (!data.error) {
-                    console.log(data);
                     setExpenses(data);
                 }
                 setIsLoading(false);
@@ -66,7 +99,6 @@ export const Expenses = () => {
 
     const handleExpenseAdd = () => {
         fetch(`${process.env.REACT_APP_API_URL}/expenses`, {
-            //paduodame
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -75,13 +107,13 @@ export const Expenses = () => {
             body: JSON.stringify({
                 type, 
                 amount,
-                userId: user.id
+                userId: user.id,
+                timestamp: date
             })
         })
-        //grįžta
         .then((res) => res.json())
         .then((data) => {
-            //jeigu data grįžta be error:
+            //console.log(data);
             if (!data.error) {
                 setExpenses(data);
                 setType('');
@@ -90,9 +122,28 @@ export const Expenses = () => {
         });
     }
 
+    const handleDeleteExpense = (id) => {
+        if (window.confirm('Do you really want to delete this expense?')) {
+            fetch(`${process.env.REACT_APP_API_URL}/expenses/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    authorization: 'Bearer ' + localStorage.getItem(LOCAL_STORAGE_JWT_TOKEN_KEY)
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                //console.log(data);
+                setExpenses(data);
+            });
+        }
+    }
+
     const totalSum = expenses.reduce((totalSum, expense) => totalSum += parseInt(expense.amount), 0);
 
+    console.log(Expenses);
+
     return (
+        
         <ExpensesList>
             <Form onSubmit={handleExpenseAdd}>
                 <Input 
@@ -108,12 +159,24 @@ export const Expenses = () => {
                     onChange={(e) => setAmount(e.target.value)}
                     value={amount}
                 />
+                <Input 
+                    placeholder="Date"
+                    type="datetime-local"
+                    //required
+                    onChange={(e) => setDate(e.target.value)}
+                    value={date}
+                />
                 <Button>Add</Button>
             </Form>
             <h2>Total spent: €{totalSum}</h2>
             {expenses.map((exp) => (
-                <ExpensesListItem key={exp.id}>
-                    <ExpenseType>{exp.type}</ExpenseType>
+                <ExpensesListItem key={exp.id} onClick={() => handleDeleteExpense(exp.id)}>
+                    <HoverOverlay>
+                        <HoverOverlayContent>DELETE</HoverOverlayContent>
+                    </HoverOverlay>
+                    <ExpenseType>
+                        {exp.type} ({DateTime.fromISO(exp.timestamp).toFormat('yyyy-LL-dd HH:mm')})
+                    </ExpenseType>
                     <ExpenseAmount>€{exp.amount}</ExpenseAmount>
                 </ExpensesListItem>
             ))}

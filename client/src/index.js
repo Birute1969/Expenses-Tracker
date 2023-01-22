@@ -13,7 +13,6 @@ root.render(
       <UserContextWrapper>
         <App />
       </UserContextWrapper>
-      
     </BrowserRouter>
   </React.StrictMode>
 );
